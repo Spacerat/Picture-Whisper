@@ -4,6 +4,7 @@ var http = require('http');
 var express = require('express');
 var templater = require('ejs');
 var fs = require('fs');
+var formidable = require('formidable');
 
 var app = express.createServer();
 var server;
@@ -33,11 +34,14 @@ app.configure('production', function(){
 
 app.error(function(err, req, res, next) {
 	console.log(err);
+	var stack = err.stack;
+	if (err.clienterror === true || err.nostack === true) stack = "";
+	
 	res.render('error', {
 		sitetitle: "Picture Whispers"
 		,pagetitle: "Error"
 		,error: err.message
-		,stack: err.stack
+		,stack: stack
 		,head: ""
 	});
 });
@@ -68,6 +72,19 @@ app.get('/game/:id', function(req, res) {
 		sitetitle: "Picture Whispers"
 		,pagetitle: ""
 		,head: head
+	});
+});
+
+app.get('/game/:id/montage', function(req, res) {
+	var id = req.params.id;
+	var game = server.getGame(id);
+	var history = game.getHistory();
+	
+	res.render('result', {
+		sitetitle: "Picure Whispers"
+		,pagetitle: "Montage"
+		,head: ""
+		,results: history
 	});
 });
 

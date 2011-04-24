@@ -2,7 +2,9 @@
 var error = require("./base_error");
 var Validator = require("./validate").Validator;
 var BasePacket = require("./server_packet").Packet;
+
 var sys = require("sys");
+
 var sessions = {};
 var module = this;
 
@@ -10,11 +12,15 @@ var module = this;
 var RoomPacket = function() {
 	BasePacket.call(this);
 	this.clientList = function(room) {
-		this.data.clientlist = room.getClientsInfo();
+		this.data.clientList = room.getClientsInfo();
 		return this;
 	}
-	this.acceptJoin = function(client) {
+	this.acceptJoin = function(client, game) {
 		this.data.acceptJoin = client.info;
+		return this;
+	}
+	this.clientLeft = function(client) {
+		this.data.clientLeft = client.info;
 		return this;
 	}
 }
@@ -35,11 +41,20 @@ this.AlreadyConnectedError = error.Make(function() {
 this.RoomNonExistantError = error.Make(function() {
 	this.message = "A room with this ID does not exist";
 	this.status = 404;
+	error.Base.call(this);
 });
 
 this.NotInGameError = error.Make(function() {
 	this.message = "You cannot send this data because you are not in a game.";
 	this.status = 403;
+	error.Base.call(this);
+});
+
+this.NameAlreadyTakenError = error.Make(function(data) {
+	this.message = "The name "+data+" is already in use in this game.";
+	this.status = 403;
+	this.nostack = true;
+	error.Base.call(this);
 });
 
 //Room class
@@ -77,12 +92,24 @@ this.Room = function(options, game) {
 		}
 		return null;
 	}
+	this.clientByIndex = function(i) {
+		return clients[i];
+	}
+	
+	this.getClient = function(i) {
+		if (typeof(i) === 'string') {
+			return this.clientByName(i);
+		}
+		else if (typeof(i) === 'number') {
+			return this.clientByIndex(i);
+		}
+	}
 	
 	this.newClient = function(client) {
 		if (clients.length + 1 > max_players) {
 			throw new module.RoomFullError(max_players);
 		};
-		if (game.newClient(client) === false) return false;
+		if (game.checkJoinable() === false) return false;
 		client.info = {
 			admin: false,
 			name: "Anon"
@@ -98,11 +125,13 @@ this.Room = function(options, game) {
 			t+=1;
 		}
 		client.info.name = newname;
+		client.info.id = clients.length;
 		clients.push(client);
 		client.room = this;
 		console.log("New client", client.info);
-		new RoomPacket().acceptJoin().Send(client);
+		new RoomPacket().acceptJoin(client).Send(client);
 		new RoomPacket().clientList(this).broadcastToRoom(client.listener, this);
+		game.newClient(client);
 	}
 	
 	this.checkJoinable = function() {
@@ -114,7 +143,16 @@ this.Room = function(options, game) {
 	
 	this.handleMessage = function(client, type, data) {
 		switch (type) {
-			
+			case 'setName':
+				clients.forEach(function(c) {
+					if (c.info.name === data && c !== client) {
+						throw new module.NameAlreadyTakenError(data);
+					}
+				});
+				
+				client.info.name = data;
+				new RoomPacket().clientList(this).broadcastToRoom(client.listener, this);
+				break;
 			default:
 				if (!game.handleMessage(client, type, data)) {
 					console.error("Unrecognised message "+type, data);
@@ -122,16 +160,36 @@ this.Room = function(options, game) {
 		}
 	}
 	
+	this.handleDisconnect = function(client) {
+		clients = clients.filter(function(c) {
+			if (c === client) return false;
+			return true;
+		});
+		if (client.info.admin === true && clients.length > 0) {
+			client.info.admin = false;
+			clients[0].info.admin = true;
+			new RoomPacket().acceptJoin(clients[0]).Send(clients[0]);
+		}
+		new RoomPacket().clientLeft(client).clientList(this).broadcastToRoom(client.listener, this);
+	}
+	
 	this.getClients = function() {
 		return clients;
 	}
+
     this.getClientsInfo = function() {
     	var ret = [];
     	for (var i = 0;i<clients.length;i++) {
-    		ret.push(clients[i].info);
+    		var n = ret.push(clients[i].info);
     	}
     	return ret;
     }
+    
+    this.getMaxPlayers = function() {
+    	return max_players;
+    }
+    
+    this.__defineGetter__("game", function() {return game;});
 }
 
 this.getSessions = function() {
@@ -170,6 +228,13 @@ this.handleMessage = function(client, type, data) {
 			client.room.handleMessage(client, type, data);
 		}
 	}
+}
+
+this.handleDisconnect = function(client) {
+	if (client.room === null) {
+		return;
+	}
+	client.room.handleDisconnect(client);
 }
 
 this.newClient = function(client) {

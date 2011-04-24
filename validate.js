@@ -14,5 +14,6 @@ this.Validator = function(options) {
 		if (isNaN(n)) throw new module.InvalidOptionsError("Expecting a number for "+name);
 		if (conditions.max) if (n > conditions.max) throw new module.InvalidOptionsError("Expecting a value lower than "+conditions.max+" for "+name);
 		if (conditions.min) if (n < conditions.min) throw new module.InvalidOptionsError("Expecting a value higher than "+conditions.min+" for "+name);
+		return n;
 	}
 }

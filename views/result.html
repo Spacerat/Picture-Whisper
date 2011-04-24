@@ -1,0 +1,10 @@
+<% results.forEach(function(r) { %>
+	<div class="sectionbox">
+	<%if (r.description) { %>
+		<span class="sender"><%=r.by.name %></span>: <%=r.description %>
+	<% } else if (r.image) { %>
+		<span class="sender"><%=r.by.name %></span> paints <%=r.image.name %>:
+		<img class="uploadedimage" src="<%- r.image.url%>" alt="<%=r.image.name%>"></img>
+	<% } %>
+	</div>
+<% }); %>

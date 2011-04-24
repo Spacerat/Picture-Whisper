@@ -19,7 +19,7 @@ h1 {
 }
 
 h1, h2, h3 {
-	font-family: courier, monospace;
+	font-family: Courier, monospace;
 }
 
 a:link {
@@ -44,7 +44,7 @@ label {
 	display: none;
 }
 
-.sectionbox, #error, .gamebox {
+.sectionbox, #error, .gamebox, .error {
 	-webkit-border-radius: 15px;
 	-moz-border-radius: 15px;
 	border-radius: 15px;
@@ -53,7 +53,7 @@ label {
 	min-width: 300px;
 }
 
-#error {
+#error, .error {
 	background-color: #600;
 	border: #A00 medium dashed;
 }
@@ -66,12 +66,42 @@ label {
 .gamebox {
 	font-size: larger;
 }
+.gamebox > form {
+	width: 100%;
+}
 
-.gamebox > input {
+.textbox {
 	width: 80%;
 	font-size: larger;
+	font-family: helvetica, sans-serif;
 	-webkit-border-radius: 6px;
 	-moz-border-radius: 6px;
 	border-radius: 6px;
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
 	padding: 5px;
+}
+
+button, .textbox, .submit {
+	font-size: large;
+}
+
+li.me {
+	font-weight: bold;
+}
+li.admin {
+	color: #F66;
+}
+
+.dialog {
+	opacity: 0.95;
+}
+
+.uploadedimage {
+	max-width:100%;
+}
+
+.sender, .destination {
+	font-style: italic;
 }

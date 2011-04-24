@@ -1,20 +1,57 @@
+<div id="error" class="hidden dialog">
+	<h3></h3>
+	<div id="stack"><pre></pre></div>
+</div>
+
 <div class="gamebox" id="lobby">
 	<h2> Waiting for players... </h2>
-	<input type="text" id="name_pick" placeholder="Choose your name" />
+	<input class="textbox" type="text" id="name_pick" placeholder="Choose your name" />
 	<h3> Players </h3>
-	<ul id="player_list"></ul>
+	<ol id="player_list"></ol>
 	<button id="begin" class="hidden">Begin</button>
 </div>
 
 <div class="gamebox hidden" id="waiting">
-
+	<h3>Waiting...</h3>
+	<p id = "waitmessage"></p>
 </div>
+
 <div class="gamebox hidden" id="upload_your_pic">
-	<div id="description"></div>
-	<div id="uploadbox"></div>
-</div>
-<div class="gamebox hidden" id="write_description">
-	<div id="picturebox"></div>
-	<input type="text" id="description_entry" placeholder="Describe the picture"/>
+	<h3><span class="sender"></span> sends you this description</h3>
+	<p id="description"></p>
+	<p>Paint a picture of it and upload it for <span class="destination"></span>.</p>
+	
+	<div id="upload_box">
+		<input type="file" id="upload" />
+	</div>
+	
 </div>
 
+<div class="gamebox hidden" id="write_starter">
+	<h3> You're starting! </h3>
+	<p> Describe a scene in a short sentence or two and send it to <span class="destination"></span>.</p>
+	<form id="starter_form" action="#">
+		<textarea class="textbox" rows = "3" id="starter_entry" name="entry" placeholder="Describe a scene"> </textarea> </br>
+		<input  class="submit" type="submit" value="Send" />
+	</form>
+</div>
+
+<div class="gamebox hidden" id="write_description">
+	<h3><span class="sender"> sends you this image</h3>
+	<div id="picturebox">
+		<a id="uploadedimagelink" href="#" target="__blank">
+			<img class="uploadedimage" id="uploadedimage"></img>
+		</a>
+	</div>
+	<p> Describe it for <span class="destination"></span>.</p>
+	<form id="description_form" action="#">
+		<textarea class="textbox" rows = "3" id="description_entry" name = "entry" placeholder="Describe the picture"> </textarea>
+		<input class="submit" type="submit" value="Send" />
+	</form>
+</div>
+
+<div class="gamebox hidden" id="endgame_box">
+	<h3> Finished? </h3>
+	<p> As the admin, you get to end the game whenever you want. Click the button below to end the game and reveal all of the images. </p>
+	<button id="end_game">End the game</button>
+</div>
