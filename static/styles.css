@@ -1,0 +1,77 @@
+
+fieldset {
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	border: #222 thin solid;
+}
+
+body {
+	background-color: #111;
+	color: #FFF;
+	padding: 0;
+	margin: 0;
+}
+
+h1 {
+	text-align: center;
+	
+}
+
+h1, h2, h3 {
+	font-family: courier, monospace;
+}
+
+a:link {
+	color: #EEE;
+}
+a:visited {
+	color: #CCF;
+}
+
+label {
+	display: inline-block;
+	width: 14em;
+}
+
+#mainbox {
+	width: 80%;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.hidden {
+	display: none;
+}
+
+.sectionbox, #error, .gamebox {
+	-webkit-border-radius: 15px;
+	-moz-border-radius: 15px;
+	border-radius: 15px;
+	padding: 1em;
+	font-family: helvetica, sans-serif;
+	min-width: 300px;
+}
+
+#error {
+	background-color: #600;
+	border: #A00 medium dashed;
+}
+
+.sectionbox, .gamebox {
+	border: #555 thin solid;
+	background-color: #333;		
+}
+
+.gamebox {
+	font-size: larger;
+}
+
+.gamebox > input {
+	width: 80%;
+	font-size: larger;
+	-webkit-border-radius: 6px;
+	-moz-border-radius: 6px;
+	border-radius: 6px;
+	padding: 5px;
+}

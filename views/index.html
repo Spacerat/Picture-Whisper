@@ -1,0 +1,59 @@
+<div class="sectionbox">
+
+<p> Picture Whispers is a very simple web game. Someone writes a phrase describing
+a scene. The next person draws it, and shows this to the next person, who then describes it
+for the next person to draw, and so on. This site makes it easy for you to play this game
+over the internet, and then easilly stick all of the pictures together at the end as
+a montage.</p>
+
+<h2> Create a game </h2>
+<form id="create" method="post" action="/newgame">
+	<fieldset>
+	<legend>Game Settings</legend>
+	<ul>
+	<li><label for="minplayers">Minimum number of players</label><input type="number" id="minplayers" name="minplayers" value="3" min="3" required /><span class="invalid_text"></span></li>
+	<li><label for="maxplayers">Maximum number of players</label><input type="number" id="maxplayers" name="maxplayers" value="10" min="3" required /><span class="invalid_text"></span></li>
+	<li><label for="limitrounds">Limit rounds</label><input id="limitrounds" name="limitrounds" type="checkbox" /> </li>
+	<li><label for="roundlimit" id="roundlimitlabel">Round limit</label><input id="roundlimit" name="roundlimit" type="number" value="1" disabled="true" /><span class="invalid_text"></span></li>
+	</ul>
+	</fieldset>
+	<input type="submit" value="Create game"/>
+</form>
+
+</div>
+
+<script> 
+	$("#create").submit(function() {
+		var min = parseInt(this.minplayers.value, 10);
+		var max = parseInt(this.maxplayers.value, 10);
+		var rounds = parseInt(this.roundlimit.value, 10);
+		var failure = false;
+		var verify = function(element, condition, warning) {
+			if (!condition) {
+				$("#"+element+" + span").html(warning);
+				failure = true;
+			}
+			return;
+		};
+		$(".invalid_text").html("");
+
+		verify("maxplayers", (min < max), "Maximum number of players must be higher than the minimum");
+		verify("minplayers", (min >= 3), "Minimum players must exceed two.");
+		verify("maxplayers", (max >= 3), "Maximum players must exceed two.");
+		verify("minplayers", (!isNaN(min)), "Please enter a number");
+		verify("maxplayers", (!isNaN(max)), "Please enter a number");
+		verify("roundlimit", (!isNaN(rounds)), "Please enter a number");
+				
+		return (!failure);
+	});
+	$("#limitrounds").change(function(evt) {
+		if (this.checked) {
+			$("#roundlimit").attr("disabled", false);
+			$("#roundlimitlabel").css('color', '#FFF');
+		}
+		else {
+			$("#roundlimit").attr("disabled", true);
+			$("#roundlimitlabel").css('color', '#777');
+		}
+	}).trigger('change');
+</script>
