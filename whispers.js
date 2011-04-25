@@ -47,6 +47,13 @@ this.NotYourTurnError = error.Make(function(action) {
 });
 
 
+this.DisconnectError = error.Make(function(client) {
+	this.message = client.info.name + " has left the game. Unfortunately, this means that the game will not be able to continue; fixing this is on my todo list.";
+	this.nostack = true;
+	error.Base.call(this);
+});
+
+
 var GamePacket = function() {
 	BasePacket.call(this);
 	this.Start = function(room) {
@@ -148,6 +155,10 @@ var Game = function(options) {
 		this.checkJoinable();
 		new GamePacket().gameInfo(this).Send(client);
 		return true;
+	}
+	
+	this.handleDisconnection = function(client) {
+		throw new module.DisconnectError(client);
 	}
 	
 	var nextPlayer = function() {
@@ -263,7 +274,23 @@ this.Server = function(app) {
 	socket.on('connection', function(client) {
 		rooms.newClient(client);
 		client.on('disconnect', function() {
-			rooms.handleDisconnect(client);
+			try {
+				rooms.handleDisconnect(client);
+			}
+			catch (err) {
+				var erro;
+				if (err.clienterror === true) {
+					erro = {'error': {msg: err.message, stack: ""}};
+				}
+				else {
+					erro = {'error': {msg: err.message, stack: err.stack}};
+				}
+				client.room.getClients().forEach(function(c){
+					if (c !== client) {c.send(erro);}
+				});
+
+				
+			}
 		});
 		
 		client.on('connect', function() {

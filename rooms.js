@@ -165,11 +165,15 @@ this.Room = function(options, game) {
 			if (c === client) return false;
 			return true;
 		});
-		if (client.info.admin === true && clients.length > 0) {
+		if (clients.length === 0) {
+			delete sessions[id];
+		}
+		else if (client.info.admin === true) {
 			client.info.admin = false;
 			clients[0].info.admin = true;
 			new RoomPacket().acceptJoin(clients[0]).Send(clients[0]);
 		}
+		game.handleDisconnection(client);
 		new RoomPacket().clientLeft(client).clientList(this).broadcastToRoom(client.listener, this);
 	}
 	
