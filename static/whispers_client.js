@@ -15,9 +15,14 @@ Whispers = (function() {
 		/*
 			User Input
 		*/
-		$('#name_pick').change(function() {
+		var namechange = function() {
 			if (this.value) {
 				socket.send({'setName': this.value});
+			}
+		}
+		$('#name_pick').change(namechange).keyup(function(evt) {
+			if (evt.which === 13) {
+				namechange.call(this);
 			}
 		});
 		$('#begin').click(function() {
@@ -89,6 +94,7 @@ Whispers = (function() {
 						data.forEach(function(c) {
 							var li = document.createElement("li");
 							list.appendChild(li);
+							li.innerHTML = htmlEntities(c.name);
 							li.innerText = c.name;
 							if (c.id === client_info.id) $(li).addClass('me');
 							if (c.admin === true) $(li).addClass('admin')

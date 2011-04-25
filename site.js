@@ -54,6 +54,10 @@ app.get('/', function(req, res) {
 	});
 });
 
+app.get('/games', function(req, res) {
+	res.send(server.getPublicGames());
+});
+
 app.post('/newgame', function(req, res) {
 	var session = server.newGame(req.body);
 	if (session) {

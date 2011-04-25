@@ -46,6 +46,12 @@ this.NotYourTurnError = error.Make(function(action) {
 	error.Base.call(this);
 });
 
+this.DisallowedFileTypeError = error.Make(function(action) {
+	this.message = "Please upload an image.";
+	this.nostack = true;
+	error.Base.call(this);
+});
+
 
 this.DisconnectError = error.Make(function(client) {
 	this.message = client.info.name + " has left the game. Unfortunately, this means that the game will not be able to continue; fixing this is on my todo list.";
@@ -158,7 +164,7 @@ var Game = function(options) {
 	}
 	
 	this.handleDisconnection = function(client) {
-		throw new module.DisconnectError(client);
+		if (started) throw new module.DisconnectError(client);
 	}
 	
 	var nextPlayer = function() {
@@ -227,6 +233,11 @@ var Game = function(options) {
 					throw new module.NotYourTurnError("write");
 				}
 				var dataurl = data.data;
+				
+				if (dataurl.indexOf('data:image/') !== 0) {
+					throw new module.DisallowedFileTypeError();
+				}
+				
 				var name = data.name;
 				var obj = {
 					url: dataurl,
@@ -269,6 +280,21 @@ this.Server = function(app) {
 		else {
 			return rooms.getSessions()[id].game;
 		}
+	}
+	
+	this.getPublicGames = function(id) {
+		var gamelist = [];
+		var r = rooms.getSessions()
+		for (var id in r) {
+			try {
+				r[id].checkJoinable()
+			}
+			catch (e){
+				continue;
+			}
+			gamelist.push(id)
+		}
+		return gamelist;
 	}
 	
 	socket.on('connection', function(client) {
