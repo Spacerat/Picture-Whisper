@@ -211,7 +211,7 @@ this.handleMessage = function(client, type, data) {
 	if (type === 'join') {
 		if (client.room === null) {
 			if (data.id) {
-				if (sessions[data.id]) {
+				if (sessions[data.id] !== undefined) {
 
 					return sessions[data.id].newClient(client);
 				}
