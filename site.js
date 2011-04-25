@@ -4,7 +4,6 @@ var http = require('http');
 var express = require('express');
 var templater = require('ejs');
 var fs = require('fs');
-var formidable = require('formidable');
 
 var app = express.createServer();
 var server;
