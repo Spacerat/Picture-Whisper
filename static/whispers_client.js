@@ -1,7 +1,6 @@
 
 
 
-
 Whispers = (function() {
 	var me = {};
 	var client_info;
@@ -43,7 +42,8 @@ Whispers = (function() {
 		});	
 		
 
-		$('#uploadform').submit(function() {
+		$('#uploadform').submit(function(evt) {
+			evt.preventDefault();
 			var f = this.File.files[0];
 			var r = new FileReader();
 			r.onload = function(data) {
