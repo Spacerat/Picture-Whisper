@@ -123,6 +123,7 @@ var Game = function(options) {
 	var description = "";
 	var uploadtoken = " ";
 	var history = [];
+	var state = "";
 	
 	//Init
 	(function() {
@@ -167,6 +168,42 @@ var Game = function(options) {
 		if (started) throw new module.DisconnectError(client);
 	}
 	
+	this.handleReconnect = function(oldclient, client) {
+		if (prevplayer === oldclient) prevplayer = client;
+		if (currplayer === oldclient) currplayer = client;
+		if (nextplayer === oldclient) nextplayer = client;
+		remaining_players = remaining_players.map(function(c) {
+			if (c === oldclient) return client; else return c;
+		});
+		
+		
+		if (state === 'paint') {
+			if (client === currplayer) {
+				new GamePacket().drawThis(prevplayer, description, nextplayer).Send(currplayer);
+			}
+			else {
+				new GamePacket().updateState('paint', prevplayer, currplayer, nextplayer).Send(currplayer);
+			}
+		}
+		else if (state === 'describe') {
+			if (client === currplayer) {
+				new GamePacket().describeThis(prevplayer, description, nextplayer).Send(currplayer);
+			}
+			else {
+				new GamePacket().updateState('describe', prevplayer, currplayer, nextplayer).Send(currplayer);
+			}
+		}
+		else if (state === 'start') {
+			if (client === currplayer) {
+				new GamePacket().initialScene(nextplayer).Send(currplayer);
+			}
+			else {
+				new GamePacket().updateState('start', prevplayer, currplayer, nextplayer).Send(currplayer);
+			}
+		}
+		
+	}
+	
 	var nextPlayer = function() {
 		if (remaining_players.length === 0) {
 			me.room.getClients().forEach(function(c) {
@@ -183,10 +220,11 @@ var Game = function(options) {
 		new GamePacket().Start().broadcastToRoom(client.listener, this.room);
 		nextPlayer();
 		nextPlayer();
+		this.room.retain_players = true;
 		
 		new GamePacket().initialScene(nextplayer).Send(currplayer);
 		new GamePacket().updateState('start', prevplayer, currplayer, nextplayer).broadcastToRoom(currplayer.listener, this.room, currplayer);
-		
+		state = 'start';
 	}
 	
 	this.handleMessage = function(client, type, data) {
@@ -224,6 +262,7 @@ var Game = function(options) {
 				nextPlayer();
 				new GamePacket().updateState('paint', prevplayer, currplayer, nextplayer).broadcastToRoom(currplayer.listener, this.room, currplayer);
 				new GamePacket().drawThis(prevplayer, description, nextplayer).Send(currplayer);
+				state = "paint";
 				return true;
 			case 'upload':
 				if (!data) {
@@ -250,7 +289,7 @@ var Game = function(options) {
 				nextPlayer();
 				new GamePacket().updateState('describe', prevplayer, currplayer, nextplayer).broadcastToRoom(currplayer.listener, this.room, currplayer);
 				new GamePacket().describeThis(prevplayer, obj, nextplayer).Send(currplayer);
-				
+				state = "describe";
 				return true;
 			default:
 				return false;
@@ -261,6 +300,11 @@ var Game = function(options) {
 
 this.Server = function(app) {
 	var socket = io.listen(app);
+
+	
+	this.generateSessionId = function(room, cookie) {
+		return rooms.getRooms()[room].generateSessionId(cookie);
+	}
 	
 	this.newGame = function(options) {
 		//Create the game
@@ -274,17 +318,17 @@ this.Server = function(app) {
 	}
 	
 	this.getGame = function(id) {
-		if (!rooms.getSessions()[id]) {
+		if (!rooms.getRooms()[id]) {
 			throw new rooms.RoomNonExistantError();
 		}
 		else {
-			return rooms.getSessions()[id].game;
+			return rooms.getRooms()[id].game;
 		}
 	}
 	
 	this.getPublicGames = function(id) {
 		var gamelist = [];
-		var r = rooms.getSessions()
+		var r = rooms.getRooms()
 		for (var id in r) {
 			try {
 				r[id].checkJoinable()
@@ -311,10 +355,15 @@ this.Server = function(app) {
 				else {
 					erro = {'error': {msg: err.message, stack: err.stack}};
 				}
-				client.room.getClients().forEach(function(c){
-					if (c !== client) {c.send(erro);}
-				});
-
+				if (client.room) {
+					client.room.getClients().forEach(function(c){
+						if (c !== client) {c.send(erro);}
+					});
+				}
+				else {
+					console.error(err);
+					console.error(err.stack);
+				}
 				
 			}
 		});

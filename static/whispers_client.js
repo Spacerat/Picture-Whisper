@@ -8,7 +8,7 @@ Whispers = (function() {
 	var client_info;
 	var socket;
 
-	me.Init = function(gameid) {
+	me.Init = function(gameid, sid) {
 		$('#error').click(function() {
 			$(this).hide('fast');
 		});
@@ -66,7 +66,8 @@ Whispers = (function() {
 		socket.connect();
 		socket.on('connect', function() {
 			socket.send({'join': {
-				id: gameid
+				id: gameid,
+				sid: sid
 			}});
 		});
 		socket.on('message', function(messages) { 

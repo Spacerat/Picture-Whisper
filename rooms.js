@@ -5,7 +5,7 @@ var BasePacket = require("./server_packet").Packet;
 
 var sys = require("sys");
 
-var sessions = {};
+var rooms = {};
 var module = this;
 
 
@@ -61,11 +61,14 @@ this.NameAlreadyTakenError = error.Make(function(data) {
 this.Room = function(options, game) {
 	var max_players;
 	var clients = [];
+	var sessions = {};
 	var that = this;
 	
 	this.id = "";
 	this.game = game;
 	this.game.room = this;
+	var ids = 0;
+	this.retain_players = false;
 
 	//Init
 	(function() {
@@ -80,9 +83,27 @@ this.Room = function(options, game) {
 		        that.id += String.fromCharCode(65+Math.floor(Math.random()*26));
 		    }
 		}
-		while (sessions[that.id] !== undefined);	
-		sessions[that.id] = that;
+		while (rooms[that.id] !== undefined);	
+		rooms[that.id] = that;
 	})();
+	
+	
+	this.generateSessionId = function(cookie) {
+		var sid;
+		do {
+		    sid="";
+		    for (x = 0; x < 32; x += 1) {
+		        sid += String.fromCharCode(49+Math.floor(Math.random()*46));
+		    }
+		}
+		while (sessions[sid] !== undefined);
+		setTimeout(function() {
+			if (sessions[sid] !== undefined) {
+				sessions[sid].cookie = cookie;
+			}
+		}, 5000)
+		return sid;
+	}	
 	
 	this.clientByName = function(name) {
 		for (var i = 0; i < clients.length; i++) {
@@ -105,33 +126,66 @@ this.Room = function(options, game) {
 		}
 	}
 	
-	this.newClient = function(client) {
-		if (clients.length + 1 > max_players) {
-			throw new module.RoomFullError(max_players);
-		};
-		if (game.checkJoinable() === false) return false;
-		client.info = {
-			admin: false,
-			name: "Anon"
-		};
-		if (clients.length === 0) {
-			client.info.admin = true;
+	this.newClient = function(client, sid) {
+		//Client joining already has a session in this room.
+		if (sessions[sid]) {
+			console.log("Existing session ",sid,"!");
+			sessions[sid] = client;
+			
+			clients.every(function(c, i) {
+				if (c.sid === sid) {
+					c.room = null;
+					c.sid = null;
+					c.cookie = null;
+					client.info = c.info;
+					client.cookie = c.cookie;
+					client.room = that;
+					client.info.present = true;
+					client.sid = sid;
+					clients[i] = client;
+					
+					game.handleReconnect(c, client);
+					new RoomPacket().acceptJoin(client).clientList(that).Send(client);
+					return false;
+				}
+				
+				return true;
+			});
+			return true;
 		}
-		//Assign the client a random name
-        var t = 1;
-        var newname = client.info.name;
-		while (this.clientByName(newname) !== null) {
-			newname = client.info.name + t;
-			t+=1;
+		else {
+			if (clients.length + 1 > max_players) {
+				throw new module.RoomFullError(max_players);
+			};
+			if (game.checkJoinable() === false) return false;
+			client.info = {
+				admin: false,
+				name: "Anon",
+				present: true
+			};
+			if (clients.length === 0) {
+				client.info.admin = true;
+			}
+			//Assign the client a random name
+		    var t = 1;
+		    var newname = client.info.name;
+			while (this.clientByName(newname) !== null) {
+				newname = client.info.name + t;
+				t+=1;
+			}
+			client.sid = sid;
+			client.info.name = newname;
+			client.info.id = ids;
+			ids+=1;
+			clients.push(client);
+			client.room = this;
+			console.log("New client", client.info);
+			new RoomPacket().acceptJoin(client).Send(client);
+			new RoomPacket().clientList(this).broadcastToRoom(client.listener, this);
+			game.newClient(client);
+			sessions[sid] = client;
+			return true;
 		}
-		client.info.name = newname;
-		client.info.id = clients.length;
-		clients.push(client);
-		client.room = this;
-		console.log("New client", client.info);
-		new RoomPacket().acceptJoin(client).Send(client);
-		new RoomPacket().clientList(this).broadcastToRoom(client.listener, this);
-		game.newClient(client);
 	}
 	
 	this.checkJoinable = function() {
@@ -161,12 +215,28 @@ this.Room = function(options, game) {
 	}
 	
 	this.handleDisconnect = function(client) {
+		if (this.retain_players === true) {
+			if (client.cookie) {
+				client.cookie.maxAge = 900000;
+				//client.cookie.touch();
+				client.info.present = false;
+			}
+			
+			return;
+		};
+		
+		delete sessions[client.sid];
+		client.sid = null;
+		client.room = null;
+		client.cookie = null;
 		clients = clients.filter(function(c) {
 			if (c === client) return false;
 			return true;
 		});
 		if (clients.length === 0) {
-			delete sessions[id];
+			rooms[this.id] = null;
+			delete rooms[this.id];
+			game.room = null;
 		}
 		else if (client.info.admin === true) {
 			client.info.admin = false;
@@ -194,26 +264,26 @@ this.Room = function(options, game) {
     }
     
     this.__defineGetter__("game", function() {return game;});
+    
 }
 
-this.getSessions = function() {
-	return sessions;
+this.getRooms = function() {
+	return rooms;
 }
 
 this.checkRoomJoinable = function(id) {
-	if (!sessions[id]) {
+	if (!rooms[id]) {
 		throw new module.RoomNonExistantError();
 	}
-	return sessions[id].checkJoinable();
+	return rooms[id].checkJoinable();
 }
 
 this.handleMessage = function(client, type, data) {
 	if (type === 'join') {
 		if (client.room === null) {
 			if (data.id) {
-				if (sessions[data.id] !== undefined) {
-
-					return sessions[data.id].newClient(client);
+				if (rooms[data.id] !== undefined) {
+					return rooms[data.id].newClient(client, data.sid);
 				}
 				else {
 					throw new module.RoomNonExistantError();

@@ -13,7 +13,7 @@ app.configure(function() {
     app.use(express.bodyParser());
     
     app.use(express.cookieParser());
-    app.use(express.session({key:"joe", secret:"lolwut"}));
+    app.use(express.session({key:"picturewhispers", secret:"lolwut", maxAge: 7200000}));
     
     app.set("view engine", "html");
     app.set("view options", {layout: true});
@@ -68,9 +68,18 @@ app.post('/newgame', function(req, res) {
 
 app.get('/game/:id', function(req, res) {
 	var id = req.params.id;
-	server.checkJoinable(id);
-	var head = templater.render(fs.readFileSync('views/game_head.html').toString(), {locals: {gameid: id}});
+	//server.checkJoinable(id);
 	
+	
+	var sid;
+	if (!req.session[id]) {
+		sid = server.generateSessionId(id, req.session.cookie);
+		req.session[id] = sid;
+	}
+	else {
+		sid = req.session[id];
+	}
+	var head = templater.render(fs.readFileSync('views/game_head.html').toString(), {locals: {gameid: id, sid: sid}});
 	res.render('game', {
 		sitetitle: "Picture Whispers"
 		,pagetitle: ""
