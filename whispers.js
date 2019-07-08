@@ -124,6 +124,8 @@ var Game = function(options) {
 	var uploadtoken = " ";
 	var history = [];
 	var state = "";
+
+	console.log(options);
 	
 	//Init
 	(function() {

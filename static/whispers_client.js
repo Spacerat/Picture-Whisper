@@ -1,6 +1,3 @@
-
-
-
 Whispers = (function() {
 	var me = {};
 	var client_info;
@@ -61,7 +58,7 @@ Whispers = (function() {
 		/*
 			Network events
 		*/
-		socket = new io.Socket(null);
+		socket = io();
 		socket.connect();
 		socket.on('connect', function() {
 			socket.send({'join': {
@@ -145,7 +142,7 @@ Whispers = (function() {
 						}
 						break;
 					default:
-						console.error("unknown message "+msgname);
+						console.error("unknown message", msgname, data);
 				}
 			}
 		});
